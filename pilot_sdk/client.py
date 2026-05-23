@@ -6,7 +6,7 @@ import httpx
 
 from .exceptions import AuthError, PaymentRequiredError, PilotError, RateLimitError
 
-_BASE_URL = "https://api.pilotnoti.com"
+_BASE_URL = "https://tools.nexomechanics.com/api/pilot"
 
 
 @dataclass
