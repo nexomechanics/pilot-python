@@ -4,8 +4,6 @@ from dataclasses import dataclass
 
 import httpx
 
-from .exceptions import AuthError, PaymentRequiredError, PilotError, RateLimitError
-
 _BASE_URL = "https://tools.nexomechanics.com/api/pilot"
 
 
@@ -24,24 +22,5 @@ class Pilot:
         url = f"{self._base}/v1/forward"
         with httpx.Client(timeout=self._timeout) as client:
             r = client.post(url, headers=self._headers, json={"destination": destination, "message": message})
-        return SendResult(remaining=self._handle(r)["remaining"])
-
-    def _handle(self, r: httpx.Response) -> dict:
-        if r.status_code == 401:
-            raise AuthError(self._err(r, "unauthorized"), r.status_code)
-        if r.status_code == 402:
-            raise PaymentRequiredError(self._err(r, "payment required"), r.status_code)
-        if r.status_code == 403:
-            raise PilotError(self._err(r, "forbidden"), r.status_code)
-        if r.status_code == 429:
-            raise RateLimitError(self._err(r, "rate limit exceeded"), r.status_code)
-        if r.status_code >= 400:
-            raise PilotError(self._err(r, "request failed"), r.status_code)
-        return r.json()
-
-    @staticmethod
-    def _err(r: httpx.Response, fallback: str) -> str:
-        try:
-            return r.json().get("error", fallback)
-        except Exception:
-            return fallback
+        r.raise_for_status()
+        return SendResult(remaining=r.json()["remaining"])
